@@ -93,7 +93,11 @@ export default function Home(){
  const selectedInBrowse=useMemo(()=>counties.reduce((n,k)=>n+(selectedCountySet.has(k)?1:0),0),[counties,selectedCountySet]);
  const allCountiesOn=counties.length>0&&selectedInBrowse===counties.length;
  const onFastInput=(value:string)=>{setBuildInput(value);if(value.trim()){setSelectedStates([]);setSelectedCounties([]);setBrowseState("");}};
- const toggleState=(s:string)=>{if(!supported.has(s))return;setBuildInput("");setBrowseState(s);setSelectedStates(v=>v.includes(s)?v.filter(x=>x!==s):[...v,s]);setSelectedCounties(v=>v.filter(x=>!x.startsWith(s+"|")));};
+ // Unchecking a fully-selected state leaves it with zero selection (checking a
+ // county always clears the state's full-selection and vice versa, so a
+ // checked state never has counties to preserve) - close its drill-down
+ // instead of leaving an orphaned "0 of N selected" panel open.
+ const toggleState=(s:string)=>{if(!supported.has(s))return;const wasSelected=selectedStates.includes(s);setBuildInput("");setBrowseState(wasSelected?"":s);setSelectedStates(v=>wasSelected?v.filter(x=>x!==s):[...v,s]);setSelectedCounties(v=>v.filter(x=>!x.startsWith(s+"|")));};
  // Stable identity keeps CountyRow's memo effective across renders.
  const toggleCounty=useCallback((key:string)=>{const state=key.split("|")[0];setBuildInput("");setBrowseState(state);setSelectedStates(v=>v.filter(x=>x!==state));setSelectedCounties(v=>v.includes(key)?v.filter(x=>x!==key):[...v,key]);},[]);
  // Check all selects every county in the browsed state so the user can then
