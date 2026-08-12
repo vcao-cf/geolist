@@ -8,7 +8,14 @@ def rows_from_zip(path: Path):
             yield from csv.DictReader(io.TextIOWrapper(raw,encoding="utf-8-sig"),delimiter="|")
 
 def clean_place(name: str) -> str:
-    return re.sub(r"\s+(city|town|village|borough|municipality|CDP|balance|consolidated government)$","",name,flags=re.I).strip()
+    # Three independent passes, each of which fires at most once. A single
+    # combined/looping regex is unsafe here: "city"/"town" etc. can be part of
+    # a real place name (e.g. "Alexander City city" -> strip once -> the
+    # correct "Alexander City" - looping would strip "City" again too).
+    n = re.sub(r"\s*\(balance\)$", "", name, flags=re.I)
+    n = re.sub(r"\s+(?:consolidated|unified|metropolitan|metro)\s+government$", "", n, flags=re.I)
+    n = re.sub(r"\s+(?:city|town|village|borough|municipality|CDP)$", "", n, flags=re.I)
+    return n.strip()
 
 parser=argparse.ArgumentParser(description="Build an offline Census place/ZCTA radius index.")
 parser.add_argument("--places",required=True,type=Path)
